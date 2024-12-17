@@ -15,13 +15,13 @@ connect(mongoURI)
 
 // Endpoint to trigger git pull and pm2 restart
 app.post("/update/:id", async (req, res) => {
-  const serverId = req.params.id;
+  const id = req.params.id;
 
-  if (!serverId) return res.status(400).send("serverId is required");
+  if (!id) return res.status(400).send("serverId is required");
 
   try {
     // Fetch repository details from MongoDB
-    const repo = await serverModel.findOne({ serverId: serverId });
+    const repo = await serverModel.findOne({ serverId: id });
 
     if (!repo) return res.status(404).send("server not found");
 
