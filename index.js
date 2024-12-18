@@ -1,10 +1,12 @@
 import express from "express";
+import cors from "cors";
 import { connect } from "mongoose";
 import { exec } from "child_process";
 import serverModel from "./src/models/server.model.js";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 // MongoDB Connection
 const mongoURI = "mongodb://evhomes:EVHomes92025@127.0.0.1:27017/ev_homes_main";
@@ -28,7 +30,7 @@ app.post("/update/:id", async (req, res) => {
     const { fullpath, serverId } = repo;
 
     // Run git pull and pm2 restart
-    const command = `cd ${fullpath} && git pull && npm i && pm2 restart ${serverId}`;
+    const command = `cd ${fullpath} && git pull --force && npm i && pm2 restart ${serverId}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
