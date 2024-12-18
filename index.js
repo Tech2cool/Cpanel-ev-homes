@@ -30,7 +30,7 @@ app.post("/update/:id", async (req, res) => {
     const { fullpath, serverId } = repo;
 
     // Run git pull and pm2 restart
-    const command = `cd ${fullpath} && git reset --hard HEAD && git pull --force && npm i && pm2 restart ${serverId}`;
+    const command = `cd ${fullpath} && git pull --force && npm i && pm2 restart ${serverId}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
