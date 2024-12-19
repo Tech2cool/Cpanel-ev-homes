@@ -50,6 +50,23 @@ app.post("/update/:id", async (req, res) => {
   }
 });
 
+app.get("/server/:id", async (req, res) => {
+  const id = req.params.id;
+
+  if (!id) return res.status(400).send("serverId is required");
+
+  try {
+    // Fetch repository details from MongoDB
+    const repo = await serverModel.findOne({ serverId: id });
+    res.status(200).json({
+      data: repo,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
 app.get("/servers", async (req, res) => {
   try {
     const repo = await serverModel.find();
