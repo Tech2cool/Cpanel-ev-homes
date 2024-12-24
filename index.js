@@ -194,7 +194,7 @@ app.get("/servers", async (req, res) => {
 });
 
 // Endpoint to get all servers
-app.get("/servers-pm2", async (req, res) => {
+app.get("/servers-pm2", (req, res) => {
   const list = [];
   try {
     pm2.connect((err) => {
@@ -213,14 +213,14 @@ app.get("/servers-pm2", async (req, res) => {
         // Map the process list to get name, ID, and status
         const processDetails = processList.map((proc) => {
           list.push({
-            id: proc.pm_id,
-            name: proc.name,
-            status: proc.pm2_env.status,
+            id: proc?.pm_id,
+            name: proc?.name,
+            status: proc?.pm2_env?.status,
           });
           return {
-            id: proc.pm_id,
-            name: proc.name,
-            status: proc.pm2_env.status,
+            id: proc?.pm_id,
+            name: proc?.name,
+            status: proc?.pm2_env?.status,
           };
         });
         console.log("All PM2 Processes:");
