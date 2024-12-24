@@ -224,7 +224,7 @@ app.get("/servers-pm2", (req, res) => {
           };
         });
         console.log("All PM2 Processes:");
-        console.table(processDetails);
+        console.table(list);
 
         pm2.disconnect(); // Disconnect from PM2
       });
