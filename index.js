@@ -3,6 +3,7 @@ import cors from "cors";
 import { connect } from "mongoose";
 import { exec } from "child_process";
 import serverModel from "./src/models/server.model.js";
+import pm2 from "pm2";
 
 const app = express();
 app.use(express.json());
@@ -187,6 +188,42 @@ app.get("/servers", async (req, res) => {
   try {
     const repo = await serverModel.find();
     return res.send({ data: repo });
+  } catch (error) {
+    return res.send(error);
+  }
+});
+
+// Endpoint to get all servers
+app.get("/servers-pm2", async (req, res) => {
+  const list = [];
+  try {
+    pm2.connect((err) => {
+      if (err) {
+        console.error("Error connecting to PM2:", err);
+        process.exit(2);
+      }
+
+      pm2.list((err, processList) => {
+        if (err) {
+          console.error("Error fetching process list:", err);
+          pm2.disconnect(); // Disconnect from PM2
+          return;
+        }
+
+        // Map the process list to get name, ID, and status
+        const processDetails = processList.map((proc) => ({
+          id: proc.pm_id,
+          name: proc.name,
+          status: proc.pm2_env.status,
+        }));
+        list = processDetails;
+        console.log("All PM2 Processes:");
+        console.table(processDetails);
+
+        pm2.disconnect(); // Disconnect from PM2
+      });
+    });
+    return res.send({ data: list });
   } catch (error) {
     return res.send(error);
   }
