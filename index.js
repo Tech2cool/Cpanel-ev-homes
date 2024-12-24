@@ -211,12 +211,18 @@ app.get("/servers-pm2", async (req, res) => {
         }
 
         // Map the process list to get name, ID, and status
-        const processDetails = processList.map((proc) => ({
-          id: proc.pm_id,
-          name: proc.name,
-          status: proc.pm2_env.status,
-        }));
-        list = processDetails;
+        const processDetails = processList.map((proc) => {
+          list.push({
+            id: proc.pm_id,
+            name: proc.name,
+            status: proc.pm2_env.status,
+          });
+          return {
+            id: proc.pm_id,
+            name: proc.name,
+            status: proc.pm2_env.status,
+          };
+        });
         console.log("All PM2 Processes:");
         console.table(processDetails);
 
