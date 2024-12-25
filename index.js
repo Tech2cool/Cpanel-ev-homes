@@ -241,26 +241,64 @@ app.get("/", (req, res) => {
 });
 
 // Endpoint to trigger git pull and pm2 restart
+const { exec } = require("child_process");
+
 app.post("/pm2-servers-list", async (req, res) => {
   try {
-    // Fetch repository details from MongoDB
-    const command = `pm2 list`;
+    const command = `pm2 jlist`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Error:", error.message);
-        return res.status(500).send(`Error: ${error.message}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution failed",
+          error: error.message,
+        });
       }
+
       if (stderr) {
         console.error("stderr:", stderr);
-        return res.status(500).send(`stderr: ${stderr}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution error",
+          error: stderr,
+        });
       }
-      console.log("stdout:", stdout);
-      res.send({ message: "Server Started Succesfully", stdout });
+
+      try {
+        const processes = JSON.parse(stdout); // Parse the JSON output
+        const runningInstances = processes.map((proc) => ({
+          id: proc.pm_id,
+          name: proc.name,
+          mode: proc.pm2_env.exec_mode,
+          pid: proc.pid,
+          status: proc.pm2_env.status,
+          cpu: proc.monit.cpu,
+          memory: proc.monit.memory,
+        }));
+
+        res.json({
+          success: true,
+          message: "PM2 running instances fetched successfully",
+          data: runningInstances,
+        });
+      } catch (parseError) {
+        console.error("Parsing Error:", parseError.message);
+        res.status(500).json({
+          success: false,
+          message: "Failed to parse PM2 output",
+          error: parseError.message,
+        });
+      }
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server Error");
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 
