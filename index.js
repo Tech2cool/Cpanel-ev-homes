@@ -240,6 +240,32 @@ app.get("/", (req, res) => {
   res.send("Git Update Server is Running 🚀");
 });
 
+// Endpoint to trigger git pull and pm2 restart
+app.post("/pm2-servers-list", async (req, res) => {
+  try {
+    // Fetch repository details from MongoDB
+    const command = `pm2 list`;
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Error:", error.message);
+        return res.status(500).send(`Error: ${error.message}`);
+      }
+      if (stderr) {
+        console.error("stderr:", stderr);
+        return res.status(500).send(`stderr: ${stderr}`);
+      }
+      console.log("stdout:", stdout);
+      repo.status = true;
+      repo.save();
+      res.send({ message: "Server Started Succesfully", stdout });
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server Error");
+  }
+});
+
 // Start Server
 const PORT = 3000;
 app.listen(PORT, () => {
