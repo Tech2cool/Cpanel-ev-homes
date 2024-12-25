@@ -20,36 +20,76 @@ connect(mongoURI)
 app.post("/start/:id", async (req, res) => {
   const id = req.params.id;
 
-  if (!id) return res.status(400).send("serverId is required");
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "serverId is required",
+    });
+  }
 
   try {
     // Fetch repository details from MongoDB
     const repo = await serverModel.findOne({ serverId: id });
 
-    if (!repo) return res.status(404).send("server not found");
+    if (!repo) {
+      return res.status(404).json({
+        success: false,
+        message: "Server not found",
+      });
+    }
 
     const { fullpath, serverId } = repo;
 
-    // Run git pull and pm2 restart
-    const command = `cd ${fullpath} && npm i && pm2 start --name ${serverId}`;
+    // Run git pull, install dependencies, and restart the server
+    const command = `cd ${fullpath} && npm i && pm2 start --name ${serverId} --json`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Error:", error.message);
-        return res.status(500).send(`Error: ${error.message}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution failed",
+          error: error.message,
+        });
       }
+
       if (stderr) {
         console.error("stderr:", stderr);
-        return res.status(500).send(`stderr: ${stderr}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution error",
+          error: stderr,
+        });
       }
+
       console.log("stdout:", stdout);
-      repo.status = true;
-      repo.save();
-      res.send({ message: "Server Started Succesfully", stdout });
+
+      try {
+        const parsedOutput = JSON.parse(stdout); // Parse the JSON output from the PM2 command
+        repo.status = true;
+        repo.save();
+
+        res.json({
+          success: true,
+          message: "Server started successfully",
+          data: parsedOutput,
+        });
+      } catch (parseError) {
+        console.error("Parsing Error:", parseError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to parse PM2 output",
+          error: parseError.message,
+        });
+      }
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server Error");
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 
@@ -95,74 +135,152 @@ app.post("/update/:id", async (req, res) => {
 app.post("/stop/:id", async (req, res) => {
   const id = req.params.id;
 
-  if (!id) return res.status(400).send("serverId is required");
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "serverId is required",
+    });
+  }
 
   try {
     // Fetch repository details from MongoDB
     const repo = await serverModel.findOne({ serverId: id });
 
-    if (!repo) return res.status(404).send("server not found");
+    if (!repo) {
+      return res.status(404).json({
+        success: false,
+        message: "Server not found",
+      });
+    }
 
     const { fullpath, serverId } = repo;
 
-    // Run git pull and pm2 restart
-    const command = `cd ${fullpath} && pm2 stop ${serverId}`;
+    // Run PM2 stop command
+    const command = `cd ${fullpath} && pm2 stop ${serverId} --json`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Error:", error.message);
-        return res.status(500).send(`Error: ${error.message}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution failed",
+          error: error.message,
+        });
       }
+
       if (stderr) {
         console.error("stderr:", stderr);
-        return res.status(500).send(`stderr: ${stderr}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution error",
+          error: stderr,
+        });
       }
-      console.log("stdout:", stdout);
-      repo.status = false;
-      repo.save();
 
-      res.send({ message: "Update successful", stdout });
+      console.log("stdout:", stdout);
+
+      try {
+        const parsedOutput = JSON.parse(stdout); // Parse JSON output from PM2
+        repo.status = false; // Update server status
+        repo.save();
+
+        res.json({
+          success: true,
+          message: "Server stopped successfully",
+          data: parsedOutput,
+        });
+      } catch (parseError) {
+        console.error("Parsing Error:", parseError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to parse PM2 output",
+          error: parseError.message,
+        });
+      }
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server Error");
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 // Endpoint to restart server
 app.post("/restart/:id", async (req, res) => {
   const id = req.params.id;
 
-  if (!id) return res.status(400).send("serverId is required");
+  if (!id) {
+    return res.status(400).json({
+      success: false,
+      message: "serverId is required",
+    });
+  }
 
   try {
     // Fetch repository details from MongoDB
     const repo = await serverModel.findOne({ serverId: id });
 
-    if (!repo) return res.status(404).send("server not found");
+    if (!repo) {
+      return res.status(404).json({
+        success: false,
+        message: "Server not found",
+      });
+    }
 
     const { fullpath, serverId } = repo;
 
-    // Run git pull and pm2 restart
-    const command = `cd ${fullpath} && npm i && pm2 restart ${serverId}`;
+    // Run git pull, install dependencies, and restart the server
+    const command = `cd ${fullpath} && npm i && pm2 restart ${serverId} --json`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Error:", error.message);
-        return res.status(500).send(`Error: ${error.message}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution failed",
+          error: error.message,
+        });
       }
+
       if (stderr) {
         console.error("stderr:", stderr);
-        return res.status(500).send(`stderr: ${stderr}`);
+        return res.status(500).json({
+          success: false,
+          message: "Command execution error",
+          error: stderr,
+        });
       }
-      console.log("stdout:", stdout);
-      repo.status = true;
-      repo.save();
 
-      res.send({ message: "Server Started Succesfully", stdout });
+      console.log("stdout:", stdout);
+
+      try {
+        const parsedOutput = JSON.parse(stdout); // Parse the JSON output from PM2
+        repo.status = true; // Update server status
+        repo.save();
+
+        res.json({
+          success: true,
+          message: "Server restarted successfully",
+          data: parsedOutput,
+        });
+      } catch (parseError) {
+        console.error("Parsing Error:", parseError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to parse PM2 output",
+          error: parseError.message,
+        });
+      }
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send("Server Error");
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: err.message,
+    });
   }
 });
 
@@ -240,7 +358,7 @@ app.get("/", (req, res) => {
   res.send("Git Update Server is Running 🚀");
 });
 
-// Endpoint to trigger git pull and pm2 restart
+// Endpoint to trigger
 app.post("/pm2-servers-list", async (req, res) => {
   try {
     const command = `pm2 jlist`;
@@ -268,13 +386,24 @@ app.post("/pm2-servers-list", async (req, res) => {
         const processes = JSON.parse(stdout); // Parse the JSON output
         const runningInstances = processes.map((proc) => ({
           id: proc.pm_id,
-          name: proc.name,
+          serverId: proc.name,
           mode: proc.pm2_env.exec_mode,
           pid: proc.pid,
           status: proc.pm2_env.status,
           cpu: proc.monit.cpu,
           memory: proc.monit.memory,
         }));
+
+        if (runningInstances?.length > 0) {
+          runningInstances.map(async (rp) => {
+            await serverModel.findOneAndUpdate(
+              { serverId: rp?.serverId },
+              {
+                ...rp,
+              }
+            );
+          });
+        }
 
         res.json({
           success: true,
