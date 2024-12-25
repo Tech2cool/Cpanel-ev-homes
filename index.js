@@ -241,8 +241,6 @@ app.get("/", (req, res) => {
 });
 
 // Endpoint to trigger git pull and pm2 restart
-const { exec } = require("child_process");
-
 app.post("/pm2-servers-list", async (req, res) => {
   try {
     const command = `pm2 jlist`;
