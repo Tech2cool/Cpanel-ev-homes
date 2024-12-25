@@ -256,8 +256,6 @@ app.post("/pm2-servers-list", async (req, res) => {
         return res.status(500).send(`stderr: ${stderr}`);
       }
       console.log("stdout:", stdout);
-      repo.status = true;
-      repo.save();
       res.send({ message: "Server Started Succesfully", stdout });
     });
   } catch (err) {
