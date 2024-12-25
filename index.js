@@ -5,7 +5,7 @@ import { exec } from "child_process";
 import serverModel from "./src/models/server.model.js";
 import pm2 from "pm2";
 import "dotenv/config";
-
+import axios from "axios";
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -293,8 +293,64 @@ app.get("/server/:id", async (req, res) => {
   try {
     // Fetch repository details from MongoDB
     const repo = await serverModel.findOne({ serverId: id });
-    res.status(200).json({
-      data: repo,
+
+    if (!repo) return res.status(404).send("Server not found");
+
+    // Execute PM2 command to get info about the specific server by name
+    const command = `pm2 jlist --name ${repo.serverId}`;
+
+    exec(command, async (error, stdout, stderr) => {
+      if (error) {
+        console.error("Error:", error.message);
+        return res.status(500).json({
+          success: false,
+          message: `Error: ${error.message}`,
+        });
+      }
+
+      if (stderr) {
+        console.error("stderr:", stderr);
+        return res.status(500).json({
+          success: false,
+          message: `stderr: ${stderr}`,
+        });
+      }
+
+      // Parse the output from pm2 jlist (it's JSON)
+      try {
+        const pm2Info = JSON.parse(stdout);
+
+        // Update the repo with the new info from PM2
+        if (pm2Info.length > 0) {
+          const serverInfo = pm2Info[0]; // The first entry is the one with the matching serverId
+          repo.status = serverInfo.pm2_env.status; // Example: Update status based on PM2 info
+          repo.memory = serverInfo.monit.memory; // Example: Update memory usage
+          repo.cpu = serverInfo.monit.cpu; // Example: Update memory usage
+          repo.mode = serverInfo.pm2_env.exec_mode; // Example: Update memory usage
+          repo.pid = serverInfo.pid; // Example: Update memory usage
+
+          // Save updated repo
+          await repo.save();
+
+          // Return the updated server info
+          res.status(200).json({
+            success: true,
+            message: "Server info updated successfully",
+            data: repo,
+          });
+        } else {
+          res.status(404).json({
+            success: false,
+            message: "Server not found in PM2 list",
+          });
+        }
+      } catch (parseError) {
+        console.error("Parsing error:", parseError.message);
+        return res.status(500).json({
+          success: false,
+          message: "Error parsing PM2 output",
+        });
+      }
     });
   } catch (err) {
     console.error(err);
@@ -306,48 +362,6 @@ app.get("/servers", async (req, res) => {
   try {
     const repo = await serverModel.find();
     return res.send({ data: repo });
-  } catch (error) {
-    return res.send(error);
-  }
-});
-
-// Endpoint to get all servers
-app.get("/servers-pm2", (req, res) => {
-  const list = [];
-  try {
-    pm2.connect((err) => {
-      if (err) {
-        console.error("Error connecting to PM2:", err);
-        process.exit(2);
-      }
-
-      pm2.list((err, processList) => {
-        if (err) {
-          console.error("Error fetching process list:", err);
-          pm2.disconnect(); // Disconnect from PM2
-          return;
-        }
-
-        // Map the process list to get name, ID, and status
-        const processDetails = processList.map((proc) => {
-          list.push({
-            id: proc?.pm_id,
-            name: proc?.name,
-            status: proc?.pm2_env?.status,
-          });
-          return {
-            id: proc?.pm_id,
-            name: proc?.name,
-            status: proc?.pm2_env?.status,
-          };
-        });
-        console.log("All PM2 Processes:");
-        console.table(list);
-
-        pm2.disconnect(); // Disconnect from PM2
-      });
-    });
-    return res.send({ data: list });
   } catch (error) {
     return res.send(error);
   }
