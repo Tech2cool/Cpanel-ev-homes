@@ -4,13 +4,14 @@ import { connect } from "mongoose";
 import { exec } from "child_process";
 import serverModel from "./src/models/server.model.js";
 import pm2 from "pm2";
+import "dotenv/config";
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 // MongoDB Connection
-const mongoURI = "mongodb://evhomes:EVHomes92025@127.0.0.1:27017/ev_homes_main";
+const mongoURI = process.env.DB_URL;
 
 connect(mongoURI)
   .then(() => console.log("MongoDB connected"))
@@ -109,7 +110,6 @@ app.post("/update/:id", async (req, res) => {
 
     // Run git pull and pm2 restart
     const command = `cd ${fullpath} && git pull --force && npm i && pm2 restart ${serverId}`;
-
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Error:", error.message);
