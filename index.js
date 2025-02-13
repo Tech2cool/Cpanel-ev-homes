@@ -39,10 +39,12 @@ app.post("/start/:id", async (req, res) => {
       });
     }
 
-    const { fullpath, serverId } = repo;
-
+    const { fullpath, serverId, serverType } = repo;
+    let command = `cd ${fullpath} && npm i && pm2 start --name ${serverId} --json`;
+    if (serverType === "flutter-web") {
+      command = `cd ${fullpath} && flutter pub get && flutter build web`;
+    }
     // Run git pull, install dependencies, and restart the server
-    const command = `cd ${fullpath} && npm i && pm2 start --name ${serverId} --json`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
@@ -109,7 +111,11 @@ app.post("/update/:id", async (req, res) => {
     const { fullpath, serverId } = repo;
 
     // Run git pull and pm2 restart
-    const command = `cd ${fullpath} && git pull --force && npm i && pm2 restart ${serverId}`;
+    let command = `cd ${fullpath} && git reset --hard HEAD && git pull --force && npm i && pm2 restart ${serverId}`;
+    if (serverType === "flutter-web") {
+      command = `cd ${fullpath} && git reset --hard HEAD && git pull --force && flutter pub get && flutter build web`;
+    }
+
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Error:", error.message);

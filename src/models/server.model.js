@@ -4,6 +4,7 @@ export const serverSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     serverId: { type: String, required: true },
+    serverType: { type: String, required: true },
     fullpath: { type: String, required: true },
     status: { type: String, default: "offline" },
     mode: { type: String, default: "" },
