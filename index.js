@@ -108,7 +108,7 @@ app.post("/update/:id", async (req, res) => {
 
     if (!repo) return res.status(404).send("server not found");
 
-    const { fullpath, serverId } = repo;
+    const { fullpath, serverId, serverType } = repo;
 
     // Run git pull and pm2 restart
     let command = `cd ${fullpath} && git reset --hard HEAD && git pull --force && npm i && pm2 restart ${serverId}`;
@@ -159,7 +159,7 @@ app.post("/stop/:id", async (req, res) => {
       });
     }
 
-    const { fullpath, serverId } = repo;
+    const { fullpath, serverId, serverType } = repo;
 
     // Run PM2 stop command
     const command = `cd ${fullpath} && pm2 stop ${serverId} --json`;
@@ -235,7 +235,7 @@ app.post("/restart/:id", async (req, res) => {
       });
     }
 
-    const { fullpath, serverId } = repo;
+    const { fullpath, serverId, serverType } = repo;
 
     // Run git pull, install dependencies, and restart the server
     const command = `cd ${fullpath} && npm i && pm2 restart ${serverId} --json`;
